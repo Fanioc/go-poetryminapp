@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+package book;
+
 // 请求书详情的参数结构  book_id 32位整形
 message BookInfoParams {
     int32 book_id = 1;
@@ -24,7 +26,7 @@ message BookList {
     repeated BookInfo book_list = 1;
 }
 // 定义 获取书详情  和 书列表服务   入参出参分别为上面所定义的结构
-service BookService {
+service Book {
     rpc GetBookInfo (BookInfoParams) returns (BookInfo) {}
     rpc GetBookList (BookListParams) returns (BookList) {}
 }

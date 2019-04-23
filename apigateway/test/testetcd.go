@@ -3,7 +3,6 @@ package main
 import (
   "context"
   "github.com/afex/hystrix-go/hystrix"
-  "github.com/fanioc/go-poetryminapp/grpcproto/book"
   "github.com/go-kit/kit/endpoint"
   "github.com/go-kit/kit/log"
   "github.com/go-kit/kit/sd/etcdv3"
@@ -81,7 +80,7 @@ func main() {
   
   ls, _ := net.Listen("tcp", serviceAddress)
   gs := grpc.NewServer(grpc.UnaryInterceptor(grpc_transport.Interceptor))
-  book.RegisterBookServiceServer(gs, bookServer)
+  services.RegisterBookServiceServer(gs, bookServer)
   gs.Serve(ls)
 }
 
@@ -91,30 +90,30 @@ type BookServer struct {
 }
 
 //通过grpc调用GetBookInfo时,GetBookInfo只做数据透传, 调用BookServer中对应Handler.ServeGRPC转交给go-kit处理
-func (s *BookServer) GetBookInfo(ctx context.Context, in *book.BookInfoParams) (*book.BookInfo, error) {
+func (s *BookServer) GetBookInfo(ctx context.Context, in *services.BookInfoParams) (*services.BookInfo, error) {
   _, rsp, err := s.bookInfoHandler.ServeGRPC(ctx, in)
   if err != nil {
     return nil, err
   }
-  return rsp.(*book.BookInfo), err
+  return rsp.(*services.BookInfo), err
 }
 
 //通过grpc调用GetBookList时,GetBookList只做数据透传, 调用BookServer中对应Handler.ServeGRPC转交给go-kit处理
-func (s *BookServer) GetBookList(ctx context.Context, in *book.BookListParams) (*book.BookList, error) {
+func (s *BookServer) GetBookList(ctx context.Context, in *services.BookListParams) (*services.BookList, error) {
   _, rsp, err := s.bookListHandler.ServeGRPC(ctx, in)
   if err != nil {
     return nil, err
   }
-  return rsp.(*book.BookList), err
+  return rsp.(*services.BookList), err
 }
 
 //创建bookList的EndPoint
 func makeGetBookListEndpoint() endpoint.Endpoint {
   return func(ctx context.Context, request interface{}) (interface{}, error) {
     //请求列表时返回 书籍列表
-    bl := new(book.BookList)
-    bl.BookList = append(bl.BookList, &book.BookInfo{BookId: 1, BookName: "21天精通php"})
-    bl.BookList = append(bl.BookList, &book.BookInfo{BookId: 2, BookName: "21天精通java"})
+    bl := new(services.BookList)
+    bl.BookList = append(bl.BookList, &services.BookInfo{BookId: 1, BookName: "21天精通php"})
+    bl.BookList = append(bl.BookList, &services.BookInfo{BookId: 2, BookName: "21天精通java"})
     return bl, nil
   }
 }
@@ -123,8 +122,8 @@ func makeGetBookListEndpoint() endpoint.Endpoint {
 func makeGetBookInfoEndpoint() endpoint.Endpoint {
   return func(ctx context.Context, request interface{}) (interface{}, error) {
     //请求详情时返回 书籍信息
-    req := request.(*book.BookInfoParams)
-    b := new(book.BookInfo)
+    req := request.(*services.BookInfoParams)
+    b := new(services.BookInfo)
     b.BookId = req.BookId
     b.BookName = "21天精通php"
     return b, nil
