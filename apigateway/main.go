@@ -3,15 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	bookpb "github.com/fanioc/go-poetryminapp/services/book"
-	"github.com/go-kit/kit/endpoint"
+	"github.com/fanioc/go-poetryminapp/apigateway/router"
 	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/sd"
 	"github.com/go-kit/kit/sd/etcdv3"
-	"github.com/go-kit/kit/sd/lb"
 	"github.com/kataras/muxie"
-	"google.golang.org/grpc"
-	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -24,10 +19,8 @@ var err error
 func main() {
 	//apigateway configure.
 	var (
-		httpAddr     = "127.0.0.1:8080"       //网关监听地址
-		etcdv3Addr   = "127.0.0.1:2379"       //etcd3 服务发现地址.
-		retryMax     = 3                      //负载均衡重试次数
-		retryTimeout = 500 * time.Millisecond //负载均衡超时时间
+		httpAddr   = "127.0.0.1:8080" //网关监听地址
+		etcdv3Addr = "127.0.0.1:2379" //etcd3 服务发现地址.
 	)
 	
 	// Logging domain.
@@ -57,43 +50,46 @@ func main() {
 	//zipkinTracer, _ := stdzipkin.NewTracer(nil, stdzipkin.WithNoopTracer(true))
 	
 	r := muxie.NewMux()
+	
+	router.RegisterRouter(r, &client, &logger)
 	// Now we begin installing the router. Each route corresponds to a single
 	// method: sum, concat, uppercase, and count.
-	{
-		type BookService struct {
-			GetBookList endpoint.Endpoint
-			GetBookInfo endpoint.Endpoint
-		}
-		var (
-			bookService    = BookService{}
-			instancer, err = etcdv3.NewInstancer(client, "/book/", logger)
-		)
-		if err != nil {
-			panic("cannot find discovered server:" + "/book/")
-		}
-		
-		{
-			factory := bookFactory(makeBookListEndpoint)
-			endpointer := sd.NewEndpointer(instancer, factory, logger)
-			balancer := lb.NewRoundRobin(endpointer)
-			retry := lb.Retry(retryMax, retryTimeout, balancer)
-			bookService.GetBookList = retry
-		}
-		
-		// Here we leverage the fact that addsvc comes with a constructor for an
-		// HTTP handler, and just install it under a particular path prefix in
-		// our router.
-		r.HandleFunc("/book/list/", func(writer http.ResponseWriter, request *http.Request) {
-			bookList, err := bookService.GetBookList(request.Context(), bookpb.BookListParams{Page: 1, Limit: 10})
-			if err != nil {
-				fmt.Println(err)
-				writer.Write([]byte("xxx"))
-			}
-			bl := bookList.(*bookpb.BookList)
-			writer.Write([]byte(bl.BookList[0].BookName))
-			fmt.Println(*bl)
-		})
-	}
+	//{
+	//	type BookService struct {
+	//		GetBookList endpoint.Endpoint
+	//		GetBookInfo endpoint.Endpoint
+	//	}
+	//	var (
+	//		bookService    = BookService{}
+	//		instancer, err = etcdv3.NewInstancer(client, "/book/", logger)
+	//	)
+	//	if err != nil {
+	//		panic("cannot find discovered server:" + "/book/")
+	//	}
+	//
+	//	{
+	//		factory := bookFactory(makeBookListEndpoint)
+	//		endpointer := sd.NewEndpointer(instancer, factory, logger)
+	//		balancer := lb.NewRoundRobin(endpointer)
+	//		retry := lb.Retry(retryMax, retryTimeout, balancer)
+	//		bookService.GetBookList = retry
+	//	}
+	//
+	//	// Here we leverage the fact that addsvc comes with a constructor for an
+	//	// HTTP handler, and just install it under a particular path prefix in
+	//	// our router.
+	//	r.HandleFunc("/book/list/", func(writer http.ResponseWriter, request *http.Request) {
+	//
+	//		bookList, err := bookService.GetBookList(request.Context(), bookpb.BookListParams{Page: 1, Limit: 10})
+	//		if err != nil {
+	//			fmt.Println(err)
+	//			writer.Write([]byte("xxx"))
+	//		}
+	//		bl := bookList.(*bookpb.BookList)
+	//		writer.Write([]byte(bl.BookList[0].BookName))
+	//		fmt.Println(*bl)
+	//	})
+	//}
 	
 	// Interrupt handler.
 	errc := make(chan error)
@@ -111,25 +107,4 @@ func main() {
 	
 	// Run!
 	_ = logger.Log("exit", <-errc)
-}
-
-func bookFactory(makeBookEndpoint func(bookClient bookpb.BookClient) endpoint.Endpoint) sd.Factory {
-	return func(instance string) (i endpoint.Endpoint, closer io.Closer, e error) {
-		fmt.Println("instance:" + instance)
-		conn, err := grpc.Dial(instance, grpc.WithInsecure())
-		if err != nil {
-			return nil, nil, err
-		}
-		
-		bookClient := bookpb.NewBookClient(conn)
-		return makeBookEndpoint(bookClient), conn, nil
-	}
-}
-
-func makeBookListEndpoint(bookClient bookpb.BookClient) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(bookpb.BookListParams)
-		response, err = bookClient.GetBookList(ctx, &req)
-		return response, err
-	}
 }

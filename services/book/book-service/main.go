@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"github.com/fanioc/go-poetryminapp/services/book/book-service/svc/server"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/sd/etcdv3"
@@ -10,8 +11,19 @@ import (
 )
 
 func main() {
+	
+	DebugAddr := ""
+	GRPCAddr := ""
+	HTTPAddr := ""
+	
+	flag.StringVar(&DebugAddr, "debug.addr", ":5060", "Debug and metrics listen address")
+	flag.StringVar(&HTTPAddr, "http.addr", ":5050", "HTTP listen address")
+	flag.StringVar(&GRPCAddr, "grpc.addr", ":5040", "gRPC (HTTP) listen address")
+	
+	flag.Parse()
+	
 	var (
-		grpcAddress = ":5050"
+		grpcAddress = GRPCAddr
 		instance    = "127.0.0.1" + grpcAddress
 		prefix      = "/book/"
 		etcdAddr    = "127.0.0.1:2379"
@@ -50,8 +62,8 @@ func main() {
 	registrar.Register()
 	
 	server.Run(server.Config{
-		HTTPAddr:  ":5051",
-		DebugAddr: ":5052",
+		HTTPAddr:  HTTPAddr,
+		DebugAddr: DebugAddr,
 		GRPCAddr:  grpcAddress,
 	})
 }
