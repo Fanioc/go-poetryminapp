@@ -6,7 +6,11 @@ import (
 	"github.com/fanioc/go-poetryminapp/apigateway/router"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/sd/etcdv3"
+	kitzipkin "github.com/go-kit/kit/tracing/zipkin"
+	kitgrpc "github.com/go-kit/kit/transport/grpc"
 	"github.com/kataras/muxie"
+	"github.com/openzipkin/zipkin-go"
+	reporter "github.com/openzipkin/zipkin-go/reporter/http"
 	"net/http"
 	"os"
 	"os/signal"
@@ -45,51 +49,28 @@ func main() {
 		}
 	}
 	
-	// Transport domain.
-	//tracer := stdopentracing.GlobalTracer() // no-op
-	//zipkinTracer, _ := stdzipkin.NewTracer(nil, stdzipkin.WithNoopTracer(true))
+	// Transport
+	var zkClientTrace kitgrpc.ClientOption
+	{
+		//创建zipkin上报管理器
+		reporte := reporter.NewReporter("http://localhost:9411/api/v2/spans")
+		
+		//运行结束，关闭上报管理器的for-select协程
+		defer reporte.Close()
+		
+		//创建trace跟踪器
+		zkTracer, err := zipkin.NewTracer(reporte)
+		
+		if err != nil {
+			fmt.Println("err Tracer :" + err.Error())
+		}
+		//添加grpc请求的before after finalizer 事件对应要处理的trace操作方法
+		zkClientTrace = kitzipkin.GRPCClientTrace(zkTracer)
+	}
 	
+	//resiger routers
 	r := muxie.NewMux()
-	
-	router.RegisterRouter(r, &client, &logger)
-	// Now we begin installing the router. Each route corresponds to a single
-	// method: sum, concat, uppercase, and count.
-	//{
-	//	type BookService struct {
-	//		GetBookList endpoint.Endpoint
-	//		GetBookInfo endpoint.Endpoint
-	//	}
-	//	var (
-	//		bookService    = BookService{}
-	//		instancer, err = etcdv3.NewInstancer(client, "/book/", logger)
-	//	)
-	//	if err != nil {
-	//		panic("cannot find discovered server:" + "/book/")
-	//	}
-	//
-	//	{
-	//		factory := bookFactory(makeBookListEndpoint)
-	//		endpointer := sd.NewEndpointer(instancer, factory, logger)
-	//		balancer := lb.NewRoundRobin(endpointer)
-	//		retry := lb.Retry(retryMax, retryTimeout, balancer)
-	//		bookService.GetBookList = retry
-	//	}
-	//
-	//	// Here we leverage the fact that addsvc comes with a constructor for an
-	//	// HTTP handler, and just install it under a particular path prefix in
-	//	// our router.
-	//	r.HandleFunc("/book/list/", func(writer http.ResponseWriter, request *http.Request) {
-	//
-	//		bookList, err := bookService.GetBookList(request.Context(), bookpb.BookListParams{Page: 1, Limit: 10})
-	//		if err != nil {
-	//			fmt.Println(err)
-	//			writer.Write([]byte("xxx"))
-	//		}
-	//		bl := bookList.(*bookpb.BookList)
-	//		writer.Write([]byte(bl.BookList[0].BookName))
-	//		fmt.Println(*bl)
-	//	})
-	//}
+	router.RegisterRouter(r, &client, &logger, &zkClientTrace)
 	
 	// Interrupt handler.
 	errc := make(chan error)

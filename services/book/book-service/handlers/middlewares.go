@@ -3,6 +3,9 @@ package handlers
 import (
 	pb "github.com/fanioc/go-poetryminapp/services/book"
 	"github.com/fanioc/go-poetryminapp/services/book/book-service/svc"
+	"github.com/go-kit/kit/ratelimit"
+	"golang.org/x/time/rate"
+	"time"
 )
 
 // WrapEndpoints accepts the service's entire collection of endpoints, so that a
@@ -12,22 +15,29 @@ import (
 // Note that the final middleware wrapped will be the outermost middleware
 // (i.e. applied first)
 func WrapEndpoints(in svc.Endpoints) svc.Endpoints {
-
+	
 	// Pass a middleware you want applied to every endpoint.
 	// optionally pass in endpoints by name that you want to be excluded
 	// e.g.
 	// in.WrapAllExcept(authMiddleware, "Status", "Ping")
-
+	
 	// Pass in a svc.LabeledMiddleware you want applied to every endpoint.
 	// These middlewares get passed the endpoints name as their first argument when applied.
 	// This can be used to write generic metric gathering middlewares that can
 	// report the endpoint name for free.
 	// github.com/metaverse/truss/_example/middlewares/labeledmiddlewares.go for examples.
 	// in.WrapAllLabeledExcept(errorCounter(statsdCounter), "Status", "Ping")
-
+	
 	// How to apply a middleware to a single endpoint.
 	// in.ExampleEndpoint = authMiddleware(in.ExampleEndpoint)
-
+	
+	//创建限流器 1r/s  每秒请求数
+	limiter := rate.NewLimiter(rate.Every(time.Second*1), 10)
+	
+	//通过DelayingLimiter中间件，在bookListEndPoint的外层再包裹一层限流的endPoint
+	limtMw := ratelimit.NewDelayingLimiter(limiter)
+	in.GetBookInfoEndpoint = limtMw(in.GetBookInfoEndpoint)
+	in.GetBookListEndpoint = limtMw(in.GetBookListEndpoint)
 	return in
 }
 

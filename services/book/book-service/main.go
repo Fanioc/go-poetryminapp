@@ -3,9 +3,14 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"github.com/fanioc/go-poetryminapp/services/book/book-service/svc/server"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/sd/etcdv3"
+	kitzipkin "github.com/go-kit/kit/tracing/zipkin"
+	kitgrpc "github.com/go-kit/kit/transport/grpc"
+	"github.com/openzipkin/zipkin-go"
+	reporter "github.com/openzipkin/zipkin-go/reporter/http"
 	"os"
 	"time"
 )
@@ -50,20 +55,38 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		
+		// 创建注册器
+		registrar := etcdv3.NewRegistrar(client, etcdv3.Service{
+			Key:   key,
+			Value: instance,
+		}, logger)
+		
+		// 注册器启动注册
+		registrar.Register()
 	}
 	
-	// 创建注册器
-	registrar := etcdv3.NewRegistrar(client, etcdv3.Service{
-		Key:   key,
-		Value: instance,
-	}, logger)
-	
-	// 注册器启动注册
-	registrar.Register()
+	var zkServerTrace kitgrpc.ServerOption
+	{
+		//创建zipkin上报管理器
+		reporte := reporter.NewReporter("http://localhost:9411/api/v2/spans")
+		
+		//运行结束，关闭上报管理器的for-select协程
+		defer reporte.Close()
+		
+		//创建trace跟踪器
+		zkTracer, err := zipkin.NewTracer(reporte)
+		
+		if err != nil {
+			fmt.Println("err Tracer :" + err.Error())
+		}
+		//添加grpc请求的before after finalizer 事件对应要处理的trace操作方法
+		zkServerTrace = kitzipkin.GRPCServerTrace(zkTracer)
+	}
 	
 	server.Run(server.Config{
 		HTTPAddr:  HTTPAddr,
 		DebugAddr: DebugAddr,
 		GRPCAddr:  grpcAddress,
-	})
+	}, zkServerTrace)
 }

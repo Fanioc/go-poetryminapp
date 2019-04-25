@@ -24,12 +24,15 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.8.5 // indirect
 	github.com/jonboulle/clockwork v0.1.0 // indirect
 	github.com/kataras/muxie v1.0.7
+	github.com/openzipkin/zipkin-go v0.1.6
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.9.2 // indirect
 	github.com/prometheus/client_model v0.0.0-20190129233127-fd36f4220a90 // indirect
 	github.com/sirupsen/logrus v1.4.1 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a // indirect
 	github.com/soheilhy/cmux v0.1.4 // indirect
+	github.com/sony/gobreaker v0.0.0-20190329013020-a9b2a3fc7395 // indirect
+	github.com/streadway/handy v0.0.0-20190108123426-d5acb3125c2a // indirect
 	github.com/stretchr/testify v1.3.0 // indirect
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5 // indirect
 	github.com/ugorji/go v1.1.4 // indirect
@@ -42,7 +45,7 @@ require (
 	golang.org/x/crypto v0.0.0-20190418165655-df01cb2cc480 // indirect
 	golang.org/x/net v0.0.0-20190419010253-1f3472d942ba // indirect
 	golang.org/x/sys v0.0.0-20190418153312-f0ce4c0180be // indirect
-	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
+	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
 	google.golang.org/grpc v1.20.1
 	gopkg.in/yaml.v2 v2.2.2 // indirect
 )

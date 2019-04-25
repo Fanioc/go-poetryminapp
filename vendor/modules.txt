@@ -10,12 +10,15 @@ github.com/coreos/etcd/mvcc/mvccpb
 github.com/coreos/etcd/pkg/types
 github.com/coreos/etcd/pkg/tlsutil
 # github.com/go-kit/kit v0.8.0
-github.com/go-kit/kit/endpoint
 github.com/go-kit/kit/log
-github.com/go-kit/kit/sd
 github.com/go-kit/kit/sd/etcdv3
-github.com/go-kit/kit/sd/lb
+github.com/go-kit/kit/tracing/zipkin
 github.com/go-kit/kit/transport/grpc
+github.com/go-kit/kit/circuitbreaker
+github.com/go-kit/kit/endpoint
+github.com/go-kit/kit/sd
+github.com/go-kit/kit/sd/lb
+github.com/go-kit/kit/ratelimit
 github.com/go-kit/kit/transport/http
 github.com/go-kit/kit/sd/internal/instance
 # github.com/go-logfmt/logfmt v0.4.0
@@ -36,14 +39,26 @@ github.com/gorilla/mux
 github.com/kataras/muxie
 # github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515
 github.com/kr/logfmt
+# github.com/openzipkin/zipkin-go v0.1.6
+github.com/openzipkin/zipkin-go
+github.com/openzipkin/zipkin-go/reporter/http
+github.com/openzipkin/zipkin-go/model
+github.com/openzipkin/zipkin-go/propagation/b3
+github.com/openzipkin/zipkin-go/idgenerator
+github.com/openzipkin/zipkin-go/propagation
+github.com/openzipkin/zipkin-go/reporter
 # github.com/pkg/errors v0.8.1
 github.com/pkg/errors
+# github.com/sony/gobreaker v0.0.0-20190329013020-a9b2a3fc7395
+github.com/sony/gobreaker
+# github.com/streadway/handy v0.0.0-20190108123426-d5acb3125c2a
+github.com/streadway/handy/breaker
 # go.etcd.io/etcd v3.3.12+incompatible
 go.etcd.io/etcd/clientv3
 go.etcd.io/etcd/pkg/transport
 # golang.org/x/net v0.0.0-20190419010253-1f3472d942ba
-golang.org/x/net/trace
 golang.org/x/net/context
+golang.org/x/net/trace
 golang.org/x/net/internal/timeseries
 golang.org/x/net/http2
 golang.org/x/net/http2/hpack
@@ -56,11 +71,14 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
 golang.org/x/text/transform
+# golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
+golang.org/x/time/rate
 # google.golang.org/genproto v0.0.0-20180817151627-c66870c02cf8
 google.golang.org/genproto/googleapis/rpc/status
 # google.golang.org/grpc v1.20.1
 google.golang.org/grpc
 google.golang.org/grpc/metadata
+google.golang.org/grpc/status
 google.golang.org/grpc/balancer
 google.golang.org/grpc/balancer/roundrobin
 google.golang.org/grpc/codes
@@ -85,7 +103,6 @@ google.golang.org/grpc/resolver
 google.golang.org/grpc/resolver/dns
 google.golang.org/grpc/resolver/passthrough
 google.golang.org/grpc/stats
-google.golang.org/grpc/status
 google.golang.org/grpc/tap
 google.golang.org/grpc/health/grpc_health_v1
 google.golang.org/grpc/balancer/base

@@ -3,13 +3,13 @@ package grpc
 
 import (
 	"context"
+	"github.com/go-kit/kit/endpoint"
+	grpctransport "github.com/go-kit/kit/transport/grpc"
+	kitgrpc "github.com/go-kit/kit/transport/grpc"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
-
-	"github.com/go-kit/kit/endpoint"
-	grpctransport "github.com/go-kit/kit/transport/grpc"
-
+	
 	// This Service
 	pb "github.com/fanioc/go-poetryminapp/services/book"
 	"github.com/fanioc/go-poetryminapp/services/book/book-service/svc"
@@ -17,19 +17,19 @@ import (
 
 // New returns an service backed by a gRPC client connection. It is the
 // responsibility of the caller to dial, and later close, the connection.
-func New(conn *grpc.ClientConn, options ...ClientOption) (svc.Endpoints, error) {
+func New(conn *grpc.ClientConn, zkClientTrace kitgrpc.ClientOption, options ...ClientOption) (svc.Endpoints, error) {
 	var cc clientConfig
-
+	
 	for _, f := range options {
 		err := f(&cc)
 		if err != nil {
 			return svc.Endpoints{}, errors.Wrap(err, "cannot apply option")
 		}
 	}
-
+	
 	clientOptions := []grpctransport.ClientOption{
-		grpctransport.ClientBefore(
-			contextValuesToGRPCMetadata(cc.headers)),
+		zkClientTrace,
+		grpctransport.ClientBefore(contextValuesToGRPCMetadata(cc.headers)),
 	}
 	var getbookinfoEndpoint endpoint.Endpoint
 	{
@@ -43,7 +43,7 @@ func New(conn *grpc.ClientConn, options ...ClientOption) (svc.Endpoints, error) 
 			clientOptions...,
 		).Endpoint()
 	}
-
+	
 	var getbooklistEndpoint endpoint.Endpoint
 	{
 		getbooklistEndpoint = grpctransport.NewClient(
@@ -56,7 +56,7 @@ func New(conn *grpc.ClientConn, options ...ClientOption) (svc.Endpoints, error) 
 			clientOptions...,
 		).Endpoint()
 	}
-
+	
 	return svc.Endpoints{
 		GetBookInfoEndpoint: getbookinfoEndpoint,
 		GetBookListEndpoint: getbooklistEndpoint,
@@ -117,11 +117,11 @@ func contextValuesToGRPCMetadata(keys []string) grpctransport.ClientRequestFunc 
 				pairs = append(pairs, k, v)
 			}
 		}
-
+		
 		if pairs != nil {
 			*md = metadata.Join(*md, metadata.Pairs(pairs...))
 		}
-
+		
 		return ctx
 	}
 }
