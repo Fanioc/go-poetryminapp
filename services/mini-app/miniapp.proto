@@ -2,13 +2,11 @@ syntax = "proto3";
 
 package miniapp;
 
-// 请求书详情的参数结构  book_id 32位整形
 message BookInfoParams {
     int32 book_id = 1;
 }
 
 
-// 书详情信息的结构   book_name字符串类型
 message BookInfo {
     int32 book_id = 1;
     string  book_name = 2;

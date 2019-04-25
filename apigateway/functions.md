@@ -1,15 +1,15 @@
-- [ ] httpRequest解析
-- [ ] UrlRouter
+- [x] httpRequest解析
+- [x] UrlRouter
 - [ ] Filter
-- [ ] Logger
-- [ ] 服务发现
-- [ ] 负载均衡
+- [x] Logger
+- [x] 服务发现
+- [x] 负载均衡
 - [ ] 流量切换
 - [ ] 协议转换
-- [ ] 全链路监控
+- [x] 全链路监控
 - [ ] 动态配置
 - [ ] 数据统计
 - [ ] 监控管理
-- [ ] Limiter
-- [ ] 熔断
+- [x] Limiter
+- [x] 熔断
 - [ ] 降级
