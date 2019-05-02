@@ -1,18 +1,20 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"github.com/fanioc/go-poetryminapp/services/book/book-service/svc/server"
 	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/sd/etcdv3"
+	"strconv"
+	
+	"github.com/go-kit/kit/sd/consul"
+	
 	kitzipkin "github.com/go-kit/kit/tracing/zipkin"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
+	"github.com/hashicorp/consul/api"
 	"github.com/openzipkin/zipkin-go"
 	reporter "github.com/openzipkin/zipkin-go/reporter/http"
 	"os"
-	"time"
 )
 
 func main() {
@@ -29,12 +31,14 @@ func main() {
 	
 	var (
 		grpcAddress = GRPCAddr
-		instance    = "127.0.0.1" + grpcAddress
-		prefix      = "/book/"
-		etcdAddr    = "127.0.0.1:2379"
-		key         = prefix + instance
+		svcAddr     = "127.0.0.1"
+		instance    = svcAddr + grpcAddress
+		port, _     = strconv.Atoi(GRPCAddr[1:])
+		consulAddr  = "127.0.0.1:8500"
+		
+		//etcdAddr    = "127.0.0.1:2379"
+		//key = prefix + instance
 	)
-	var err error
 	
 	var logger log.Logger
 	{
@@ -44,25 +48,73 @@ func main() {
 		logger = log.With(logger, "caller", log.DefaultCaller)
 	}
 	
-	var client etcdv3.Client
+	// Service discovery domain. In this example we use Consul.
+	var client consul.Client
 	{
-		etcdConfig := etcdv3.ClientOptions{
-			DialTimeout:   time.Second * 3,
-			DialKeepAlive: time.Second * 3,
-		}
-		
-		client, err = etcdv3.NewClient(context.Background(), []string{etcdAddr}, etcdConfig)
+		consulConfig := api.DefaultConfig()
+		consulConfig.Address = consulAddr
+		consulClient, err := api.NewClient(consulConfig)
 		if err != nil {
-			panic(err)
+			logger.Log("err", err)
+			os.Exit(1)
+		}
+		client = consul.NewClient(consulClient)
+		
+		serviceConfig := api.AgentServiceRegistration{
+			ID:                "book-" + svcAddr + "-" + GRPCAddr[1:],
+			Name:              "book",
+			Tags:              []string{"book", "book/list", "book/info"},
+			Port:              port,
+			Address:           svcAddr,
+			EnableTagOverride: false,
+			Check: &api.AgentServiceCheck{
+				CheckID:                        "grpc port",
+				Interval:                       "10s", // 健康检查间隔
+				DeregisterCriticalServiceAfter: "1m",  // 注销时间，相当于过期时间
+				TCP:                            instance,
+			},
 		}
 		
 		// 创建注册器
-		registrar := etcdv3.NewRegistrar(client, etcdv3.Service{
-			Key:   key,
-			Value: instance,
-		}, logger)
+		registrar := consul.NewRegistrar(client, &serviceConfig, logger)
 		
 		// 注册器启动注册
+		registrar.Register()
+		
+		//redis
+		serviceConfig = api.AgentServiceRegistration{
+			ID:                "redis-" + "127.0.0.1" + "-6379",
+			Name:              "redis",
+			Tags:              []string{"redis5.0", "redis"},
+			Port:              6379,
+			Address:           svcAddr,
+			EnableTagOverride: false,
+			Check: &api.AgentServiceCheck{
+				CheckID:                        "redis",
+				Interval:                       "10s", // 健康检查间隔
+				DeregisterCriticalServiceAfter: "1h",  // 注销时间，相当于过期时间
+				TCP:                            "127.0.0.1:6379",
+			},
+		}
+		registrar = consul.NewRegistrar(client, &serviceConfig, logger)
+		registrar.Register()
+		
+		//mysql
+		serviceConfig = api.AgentServiceRegistration{
+			ID:                "mysql-" + "127.0.0.1" + "-3306",
+			Name:              "mysql",
+			Tags:              []string{"mysql8.0", "mysql"},
+			Port:              3306,
+			Address:           svcAddr,
+			EnableTagOverride: false,
+			Check: &api.AgentServiceCheck{
+				CheckID:                        "mysql",
+				Interval:                       "10s", // 健康检查间隔
+				DeregisterCriticalServiceAfter: "1h",  // 注销时间，相当于过期时间
+				TCP:                            "127.0.0.1:3306",
+			},
+		}
+		registrar = consul.NewRegistrar(client, &serviceConfig, logger)
 		registrar.Register()
 	}
 	

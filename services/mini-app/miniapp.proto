@@ -2,29 +2,71 @@ syntax = "proto3";
 
 package miniapp;
 
-message BookInfoParams {
-    int32 book_id = 1;
+service MinApp {
+    rpc Login (LoginParams) returns (Session) {
+    }
+    rpc CheckUserSession (CheckSessionParams) returns (CheckSession) {
+    }
+    rpc GetUserInfo (GetUserInfoParams) returns (UserInfo) {
+    }
+    rpc UpdateUserInfo (UpdateUserInfoParams) returns (ErrCode) {
+    }
+    rpc GetUserConfig (GetUserConfigParams) returns (UserCofing) {
+    }
+    rpc SetUserConfig (SetUserConfigParams) returns (ErrCode) {
+    }
+}
+
+message ErrCode {
+    int32 code = 1;
+    string msg = 2;
+}
+
+message LoginParams {
+    string code = 1;
+}
+
+message Session {
+    string session = 1;
+    int32 user_id = 2;
+    ErrCode errcode = 3;
+}
+
+message CheckSession {
+    int32 user_id = 1;
+    ErrCode errcode = 2;
+}
+
+message CheckSessionParams {
+    string session = 1;
+}
+
+message UserInfo {
+    string nick_name = 1;
+    ErrCode errcode = 2;
+}
+
+message UserCofing {
+    string nick_name = 1;
+    ErrCode errcode = 2;
+}
+
+message GetUserInfoParams {
+    string session = 1;
+    int32 user_id = 2;
+}
+
+message GetUserConfigParams {
+    string session = 1;
+    int32 user_id = 2;
+}
+
+message UpdateUserInfoParams {
+    string session = 1;
+}
+
+message SetUserConfigParams {
+    string session = 1;
 }
 
 
-message BookInfo {
-    int32 book_id = 1;
-    string  book_name = 2;
-}
-
-// 请求书列表的参数结构  page、limit   32位整形
-message BookListParams {
-    int32 page = 1;
-    int32 limit = 2;
-}
-
-
-// 书列表的结构    BookInfo结构数组
-message BookList {
-    repeated BookInfo book_list = 1;
-}
-// 定义 获取书详情  和 书列表服务   入参出参分别为上面所定义的结构
-service Book {
-    rpc GetBookInfo (BookInfoParams) returns (BookInfo) {}
-    rpc GetBookList (BookListParams) returns (BookList) {}
-}

@@ -10,7 +10,7 @@ import (
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/sd"
-	"github.com/go-kit/kit/sd/etcdv3"
+	"github.com/go-kit/kit/sd/consul"
 	"github.com/go-kit/kit/sd/lb"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
 	"github.com/kataras/muxie"
@@ -44,12 +44,9 @@ type BookService struct {
 	svc.Endpoints
 }
 
-func BookRegisterRouter(r *muxie.Mux, etcdclient *etcdv3.Client, logger *log.Logger, zkClientTrace *kitgrpc.ClientOption) {
+func BookRegisterRouter(r *muxie.Mux, consulclient *consul.Client, logger *log.Logger, zkClientTrace *kitgrpc.ClientOption) {
 	
-	instancer, err := etcdv3.NewInstancer(*etcdclient, "/"+bookService.Name+"/", *logger)
-	if err != nil {
-		panic("cannot find discovered server:" + bookService.Name)
-	}
+	instancer := consul.NewInstancer(*consulclient, *logger, bookService.Name, []string{"book"}, false)
 	
 	commandName := bookService.Name
 	hystrix.ConfigureCommand(commandName, hystrix.CommandConfig{

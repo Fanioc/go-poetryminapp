@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/afex/hystrix-go/hystrix"
 	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/sd/consul"
 	"github.com/go-kit/kit/sd/etcdv3"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
 	"github.com/kataras/muxie"
@@ -27,6 +28,6 @@ type ServiceRoute interface {
 	RegisterRouter(r *muxie.Mux, etcdclient *etcdv3.Client, logger *log.Logger)
 }
 
-func RegisterRouter(r *muxie.Mux, etcdclient *etcdv3.Client, logger *log.Logger, zkClientTrace *kitgrpc.ClientOption) {
+func RegisterRouter(r *muxie.Mux, etcdclient *consul.Client, logger *log.Logger, zkClientTrace *kitgrpc.ClientOption) {
 	BookRegisterRouter(r, etcdclient, logger, zkClientTrace)
 }
